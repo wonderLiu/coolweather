@@ -9,7 +9,7 @@ import java.util.List;
  */
 
 public class Weather {
-    public String stutus;
+    public String status;
 
     public Basic basic;
 
