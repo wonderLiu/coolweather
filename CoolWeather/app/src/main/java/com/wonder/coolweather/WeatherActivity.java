@@ -6,11 +6,13 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.bumptech.glide.Glide;
 import com.wonder.coolweather.gson.Forecast;
 import com.wonder.coolweather.gson.Weather;
 import com.wonder.coolweather.util.HttpUtil;
@@ -35,6 +37,7 @@ public class WeatherActivity extends AppCompatActivity {
     private TextView comfortText;
     private TextView carwashText;
     private TextView sportText;
+    private ImageView bingImageView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,8 +54,15 @@ public class WeatherActivity extends AppCompatActivity {
         comfortText = (TextView) findViewById(R.id.comfort_text);
         carwashText = (TextView) findViewById(R.id.car_wash_text);
         sportText = (TextView) findViewById(R.id.sport_text);
+        bingImageView = (ImageView) findViewById(R.id.bing_image_pic);
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        String bingPic = prefs.getString("bing_pic",null);
+        if (bingPic != null){
+            Glide.with(this).load(bingPic).into(bingImageView);
+        } else {
+            loadBingPic();
+        }
         String weatherString = prefs.getString("weather",null);
         if (weatherString != null){
             Weather weather = Utility.handleWeatherResponse(weatherString);
@@ -65,7 +75,32 @@ public class WeatherActivity extends AppCompatActivity {
 
     }
 
+    private void loadBingPic() {
+        String requestBingPic = "http://guolin.tech/api/bing_pic";
+        HttpUtil.sendOkHttpRequest(requestBingPic, new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                e.printStackTrace();
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                final String bingPic = response.body().string();
+                SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(WeatherActivity.this).edit();
+                editor.putString("bing_pic",bingPic);
+                editor.apply();
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Glide.with(WeatherActivity.this).load(bingPic).into(bingImageView);
+                    }
+                });
+            }
+        });
+    }
+
     private void requestWeather(String weatherId) {
+        //https://free-api.heweather.com/v5/weather?city=yourcity&key=yourkey
         String weatherUrl = "http://guolin.tech/api/weather?cityid=" + weatherId
                 + "&key=4a81184ad5d34578b5afcd53a1854129";
         HttpUtil.sendOkHttpRequest(weatherUrl, new Callback() {
@@ -99,6 +134,7 @@ public class WeatherActivity extends AppCompatActivity {
                 });
             }
         });
+        loadBingPic();
     }
 
     private void showWeatherInfo(Weather weather) {
